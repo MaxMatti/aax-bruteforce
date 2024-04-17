@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <thread>
+#include <vector>
 
 // converts base16-string to byte-string
 std::string base16(std::string input) {
