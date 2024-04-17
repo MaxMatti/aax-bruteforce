@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <cstdint>
 
 namespace cpu {
 	// swaps the endian of any datatype. Source: http://stackoverflow.com/a/4956493
