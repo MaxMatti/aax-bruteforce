@@ -15,7 +15,7 @@ People running Arch Linux(or derivatives) can use the [AUR package](https://aur.
 ## Building
 
 Dependencies: 
-* Clang - Tested with version 17.0.6
+* Clang - Tested with versions 11.1.0 and 17.0.6
 
 Building the `main` binary is as simple as cloning the repo and running make:
 ```bash
