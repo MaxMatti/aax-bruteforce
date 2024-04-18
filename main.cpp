@@ -1,10 +1,19 @@
 #include "cpu.h"
 #include "helpers.h"
 
+#include <csignal>
 #include <iostream>
 #include <string>
 #include <thread>
 #include <vector>
+
+// for the profiling step of profile guided optimization
+void signalHandler(int signum) {
+	std::cout << "Interrupt signal (" << signum << ") received.\n";
+	// Cleanup and close up stuff here
+	// Terminate program
+	exit(signum);
+}
 
 // converts base16-string to byte-string
 std::string base16(std::string input) {
@@ -51,6 +60,9 @@ void thread(char* hash, std::uint64_t counter, std::uint64_t counter_end) {
 }
 
 int main(int argc, char const *argv[]) {
+	std::signal(SIGINT, signalHandler);
+	std::signal(SIGTERM, signalHandler);
+
 	std::string hash_base16;
 	unsigned int threadcount;
 
