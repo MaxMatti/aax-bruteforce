@@ -6,20 +6,28 @@ PROFILE_GEN_FLAGS = -fprofile-instr-generate
 PROFILE_USE_FLAGS = -fprofile-instr-use=$(PROFILE_DATA)
 
 PROFILE_DATA = default.profdata
+SOURCES = main.cpp cpu.cpp helpers.cpp
 
-all: main_pgo main_static_pgo
+all: main_pgo
 
-main_pgo: main.cpp cpu.cpp helpers.cpp
-	$(CXX) $(CXXFLAGS) $(PROFILE_GEN_FLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
-	-timeout --signal=SIGINT 600 ./$@ 23456789abcde23456789abcde23456789abcdef
+.PHONY: static
+static: main_static_pgo
+
+main_pgo: $(SOURCES)
+	$(CXX) $(CXXFLAGS) $(PROFILE_GEN_FLAGS) $(LDFLAGS) -o $@_profgen $(SOURCES) $(LDLIBS)
+	-timeout --signal=SIGINT 60 ./$@_profgen 23456789abcde23456789abcde23456789abcdef
 	llvm-profdata merge -sparse default.profraw -o $(PROFILE_DATA)
-	$(CXX) $(CXXFLAGS) $(PROFILE_USE_FLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+	$(CXX) $(CXXFLAGS) $(PROFILE_USE_FLAGS) $(LDFLAGS) -o $@ $(SOURCES) $(LDLIBS)
+	rm -f $@_profgen
 
-main_static_pgo: main.cpp cpu.cpp helpers.cpp
-	$(CXX) $(CXXFLAGS) $(PROFILE_GEN_FLAGS) $(LDFLAGS) -static -o $@ $^ $(LDLIBS)
-	-timeout --signal=SIGINT 600 ./$@ 23456789abcde23456789abcde23456789abcdef
+main_static_pgo: $(SOURCES)
+	@echo "Note: Static linking requires static versions of system libraries"
+	@echo "Consider installing: glibc-static, libpthread-static, libm-static"
+	$(CXX) $(CXXFLAGS) $(PROFILE_GEN_FLAGS) $(LDFLAGS) -static -o $@_profgen $(SOURCES) $(LDLIBS)
+	-timeout --signal=SIGINT 60 ./$@_profgen 23456789abcde23456789abcde23456789abcdef
 	llvm-profdata merge -sparse default.profraw -o $(PROFILE_DATA)
-	$(CXX) $(CXXFLAGS) $(PROFILE_USE_FLAGS) $(LDFLAGS) -static -o $@ $^ $(LDLIBS)
+	$(CXX) $(CXXFLAGS) $(PROFILE_USE_FLAGS) $(LDFLAGS) -static -o $@ $(SOURCES) $(LDLIBS)
+	rm -f $@_profgen
 
 clean:
-	rm -f main_pgo main_static_pgo *.gcda *.gcno *.profraw $(PROFILE_DATA)
+	rm -f main_pgo main_static_pgo main_pgo_profgen main_static_pgo_profgen *.gcda *.gcno *.profraw $(PROFILE_DATA)
