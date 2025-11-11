@@ -11,7 +11,6 @@ rule("pgo")
     
     on_build(function (target)
         import("core.project.depend")
-        import("core.tool.compiler")
         
         local targetfile = target:targetfile()
         local profgen = targetfile .. "_profgen"
@@ -25,17 +24,19 @@ rule("pgo")
         depend.on_changed(function ()
             print("Building PGO instrumented binary...")
             
-            -- Get compiler instance
-            local compinst = compiler.load("cxx", {target = target})
+            -- Build command arguments
+            local sources = target:sourcefiles()
+            local cxxflags = table.join({"-O3", "-std=c++20", "-pthread", "-Wall", "-Wextra", 
+                                       "-march=native", "-mtune=native", "-flto"}, 
+                                      target:get("cxxflags") or {})
+            local ldflags = table.join(target:get("ldflags") or {}, {"-pthread"})
             
             -- Profile generation build
-            local profgen_flags = table.join(target:get("cxxflags") or {}, {"-fprofile-instr-generate"})
-            local profgen_ldflags = table.join(target:get("ldflags") or {}, {"-fprofile-instr-generate"})
+            local profgen_args = table.join(cxxflags, {"-fprofile-instr-generate"}, 
+                                          ldflags, {"-fprofile-instr-generate"}, 
+                                          {"-o", profgen}, sources)
             
-            compinst:link(target:sourcefiles(), profgen, {
-                linkflags = profgen_ldflags,
-                cxxflags = profgen_flags
-            })
+            os.vrunv("clang++", profgen_args)
             
             -- Run profiling
             print("Running profile collection...")
@@ -47,13 +48,11 @@ rule("pgo")
             
             -- Final optimized build
             print("Building PGO optimized binary...")
-            local pgo_flags = table.join(target:get("cxxflags") or {}, {"-fprofile-instr-use=" .. profile_data})
-            local pgo_ldflags = table.join(target:get("ldflags") or {}, {"-fprofile-instr-use=" .. profile_data})
+            local pgo_args = table.join(cxxflags, {"-fprofile-instr-use=" .. profile_data}, 
+                                      ldflags, {"-fprofile-instr-use=" .. profile_data},
+                                      {"-o", targetfile}, sources)
             
-            compinst:link(target:sourcefiles(), targetfile, {
-                linkflags = pgo_ldflags,
-                cxxflags = pgo_flags  
-            })
+            os.vrunv("clang++", pgo_args)
             
             -- Cleanup
             os.rm(profgen)

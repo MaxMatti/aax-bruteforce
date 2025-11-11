@@ -15,7 +15,8 @@ PGO_TEST_ARGS = 23456789abcde23456789abcde23456789abcdef
 PGO_TIMEOUT = 60
 
 # Source files
-SOURCES = main.cpp cpu.cpp helpers.cpp
+EXTRA_SOURCES = main.cpp cpu.cpp helpers.cpp
+SOURCES= main.cpp $(EXTRA_SOURCES)
 
 # Static linking warning
 STATIC_WARNING = @echo "Note: Static linking requires static versions of system libraries"; \
@@ -33,6 +34,9 @@ all: main_pgo
 
 main: $(SOURCES)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(SOURCES) $(LDLIBS)
+
+prepare-hashlist: prepare-hashlist.cpp
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ prepare-hashlist.cpp $(EXTRA_SOURCES) $(LDLIBS)
 
 main_static: $(SOURCES)
 	$(STATIC_WARNING)
