@@ -15,7 +15,7 @@ PGO_TEST_ARGS = 23456789abcde23456789abcde23456789abcdef
 PGO_TIMEOUT = 60
 
 # Source files
-EXTRA_SOURCES = main.cpp cpu.cpp helpers.cpp
+EXTRA_SOURCES = cpu.cpp helpers.cpp
 SOURCES= main.cpp $(EXTRA_SOURCES)
 
 # Static linking warning
@@ -37,6 +37,9 @@ main: $(SOURCES)
 
 prepare-hashlist: prepare-hashlist.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ prepare-hashlist.cpp $(EXTRA_SOURCES) $(LDLIBS)
+
+test: test.cpp
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ test.cpp $(EXTRA_SOURCES) $(LDLIBS)
 
 main_static: $(SOURCES)
 	$(STATIC_WARNING)
@@ -72,7 +75,7 @@ static: main_static_pgo
 # ======================
 
 clean:
-	rm -f main main_static main_pgo main_static_pgo 
+	rm -f main main_static main_pgo main_static_pgo test prepare-hashlist
 	rm -f main_pgo_profgen main_static_pgo_profgen 
 	rm -f *.gcda *.gcno *.profraw $(PROFILE_DATA)
 
