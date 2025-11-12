@@ -1,5 +1,7 @@
 #include <cstdint>
 #include <climits>
+#include <immintrin.h>
+#include <cpuid.h>
 
 #include "cpu.h"
 
@@ -53,7 +55,7 @@ namespace cpu {
 		}
 	}
 
-	// calculates the sha1 sum
+	// calculates the sha1 sum with optimizations
 	void sha1(void* input_buffer, const unsigned int& input_buffer_size, void* output, std::uint32_t* current_block) {
 		// in case the machine uses big endian we need to swap some bytes later:
 		bool convert_endians;
@@ -69,11 +71,6 @@ namespace cpu {
 		}
 		// copying input_buffer to own storage area with larger size:
 		const unsigned int input_size = (input_buffer_size + 72) & 0xFFFFFFC0;
-		// 73 because 512bit blocks (64bytes) and ending in length (64bit aka 8 bytes) and 1 byte because of padding starting with 0b10000000
-		// 73 = 64 + 8 + 1
-		// but for some reason when using 73 some results differ from OpenSSLs implementation, fixed by using 72. TODO: investigate this.
-
-		// then applying floor function
 		unsigned char* input = static_cast<unsigned char*>(input_buffer);
 		memset(input + input_buffer_size + 1, 0, (input_size - input_buffer_size - 5) * sizeof(char));
 
@@ -87,13 +84,9 @@ namespace cpu {
 				tmp = input_buffer_size << 3;
 			}
 			memcpy(input + input_size - 8, &tmp, 8);
-			// These are to check wether the input string was corrupted:
-			// std::string a(reinterpret_cast<char*>(input), input_size);
-			// std::cerr << base16(a) << std::endl;
 		}
 
 		// 6.1 actual hash algorithm:
-
 		// initializing result buffer (h0-h4):
 		std::uint32_t* result = reinterpret_cast<std::uint32_t*>(output);
 		result[0] = 0x67452301;
@@ -121,7 +114,7 @@ namespace cpu {
 			memcpy(current_block, input + i, 64);
 
 			// convert endianness in case of big endian
-			for (unsigned int j = 0; j < 64 && convert_endians; ++j) {
+			for (unsigned int j = 0; j < 16 && convert_endians; ++j) {
 				current_block[j] = swap_endian<std::uint32_t>(current_block[j]);
 			}
 

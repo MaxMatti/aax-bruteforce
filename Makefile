@@ -3,7 +3,7 @@
 
 # Compiler and flags
 CXX = clang++
-CXXFLAGS = -O3 -std=c++20 -pthread -Wall -Wextra -flto -march=native -mtune=native
+CXXFLAGS = -O3 -std=c++20 -pthread -Wall -Wextra -flto -march=native -mtune=native -msha
 LDFLAGS =
 LDLIBS =
 
@@ -52,6 +52,8 @@ main_static: $(SOURCES)
 main_pgo: $(SOURCES)
 	$(CXX) $(CXXFLAGS) $(PROFILE_GEN_FLAGS) $(LDFLAGS) -o $@_profgen $(SOURCES) $(LDLIBS)
 	-timeout --signal=SIGINT $(PGO_TIMEOUT) ./$@_profgen $(PGO_TEST_ARGS)
+	@echo "Running quick profiling pass to exercise helpers functions..."
+	-timeout --signal=SIGINT 10 ./$@_profgen 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 1
 	llvm-profdata merge -sparse default.profraw -o $(PROFILE_DATA)
 	$(CXX) $(CXXFLAGS) $(PROFILE_USE_FLAGS) $(LDFLAGS) -o $@ $(SOURCES) $(LDLIBS)
 	rm -f $@_profgen
@@ -60,6 +62,8 @@ main_static_pgo: $(SOURCES)
 	$(STATIC_WARNING)
 	$(CXX) $(CXXFLAGS) $(PROFILE_GEN_FLAGS) $(LDFLAGS) -static -o $@_profgen $(SOURCES) $(LDLIBS)
 	-timeout --signal=SIGINT $(PGO_TIMEOUT) ./$@_profgen $(PGO_TEST_ARGS)
+	@echo "Running quick profiling pass to exercise helpers functions..."
+	-timeout --signal=SIGINT 10 ./$@_profgen 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 1
 	llvm-profdata merge -sparse default.profraw -o $(PROFILE_DATA)
 	$(CXX) $(CXXFLAGS) $(PROFILE_USE_FLAGS) $(LDFLAGS) -static -o $@ $(SOURCES) $(LDLIBS)
 	rm -f $@_profgen
